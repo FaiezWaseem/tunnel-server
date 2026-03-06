@@ -10,6 +10,7 @@ This project supports:
 - User registration and token issuance
 - User roles (`admin`, `client`) with default `client` registration role
 - Token auth and subdomain ownership for tunnel clients
+- Custom HTML 404 page for unknown or offline tunnels
 - Client reconnect with backoff
 - Binary-safe payload forwarding via Base64
 

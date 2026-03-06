@@ -35,6 +35,94 @@ const authStore = new AuthStore(DB_PATH);
 const tunnels = new Map<string, ServerWebSocket<WsData>>();
 const pendingRequests = new Map<string, PendingRequest>();
 
+function renderNotFoundPage(title: string, detail: string): string {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${title}</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5efe4;
+        --card: #fffaf2;
+        --ink: #1f1a14;
+        --muted: #6d6258;
+        --accent: #bf4d28;
+        --line: #e8d8c4;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at top left, #f9d9b2 0, transparent 28%),
+          radial-gradient(circle at bottom right, #f0c39e 0, transparent 24%),
+          var(--bg);
+        color: var(--ink);
+        font-family: Georgia, "Times New Roman", serif;
+        padding: 24px;
+      }
+      main {
+        width: min(720px, 100%);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        padding: 40px 32px;
+        box-shadow: 0 18px 60px rgba(42, 27, 12, 0.12);
+      }
+      .eyebrow {
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        font: 700 12px/1.2 Arial, sans-serif;
+        margin-bottom: 14px;
+      }
+      h1 {
+        margin: 0 0 14px;
+        font-size: clamp(36px, 6vw, 64px);
+        line-height: 0.95;
+      }
+      p {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.6;
+        color: var(--muted);
+        max-width: 56ch;
+      }
+      .status {
+        margin-top: 28px;
+        display: inline-block;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 10px 14px;
+        font: 600 13px/1.2 Arial, sans-serif;
+        color: var(--ink);
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">Tunnel Server</div>
+      <h1>${title}</h1>
+      <p>${detail}</p>
+      <div class="status">HTTP 404</div>
+    </main>
+  </body>
+</html>`;
+}
+
+function htmlNotFound(title: string, detail: string): Response {
+  return new Response(renderNotFoundPage(title, detail), {
+    status: 404,
+    headers: { "content-type": "text/html; charset=utf-8" },
+  });
+}
+
 function getSubdomainFromHost(hostHeader: string): string {
   const hostWithoutPort = hostHeader.split(":")[0].trim().toLowerCase();
   const bareDomain = DOMAIN.toLowerCase();
@@ -193,12 +281,12 @@ Bun.serve<WsData>({
     const host = req.headers.get("host") ?? "";
     const subdomain = getSubdomainFromHost(host);
     if (!subdomain) {
-      return new Response("Unknown host", { status: 404 });
+      return htmlNotFound("Unknown Host", `This request host is not mapped under ${DOMAIN}.`);
     }
 
     const tunnel = tunnels.get(subdomain);
     if (!tunnel) {
-      return new Response("Tunnel not found", { status: 404 });
+      return htmlNotFound("Tunnel Offline", `No active client is connected for ${subdomain}.${DOMAIN}.`);
     }
 
     const requestId = crypto.randomUUID();
