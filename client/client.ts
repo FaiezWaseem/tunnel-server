@@ -217,6 +217,21 @@ function sanitizeForwardHeaders(headers: Record<string, string>): Record<string,
   return out;
 }
 
+function sanitizeResponseHeaders(headers: Record<string, string>): Record<string, string> {
+  const blocked = new Set([
+    "connection",
+    "content-length",
+    "content-encoding",
+    "transfer-encoding",
+    "keep-alive",
+  ]);
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(headers)) {
+    if (!blocked.has(k.toLowerCase())) out[k] = v;
+  }
+  return out;
+}
+
 function isReqMessage(v: unknown): v is ReqMessage {
   if (!v || typeof v !== "object" || Array.isArray(v)) return false;
   const r = v as Record<string, unknown>;
@@ -347,7 +362,7 @@ async function handleRequest(ws: WebSocket, req: ReqMessage): Promise<void> {
         type: "RES",
         id: req.id,
         status: upstream.status,
-        headers: Object.fromEntries(upstream.headers.entries()),
+        headers: sanitizeResponseHeaders(Object.fromEntries(upstream.headers.entries())),
         bodyBase64: encodeBase64(body),
       }),
     );
