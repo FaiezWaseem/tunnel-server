@@ -5,3 +5,5 @@ dist/
 !*.example
 *.log
 *.db
+*.db-shm
+*.db-wal
