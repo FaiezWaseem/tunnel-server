@@ -199,6 +199,7 @@ Optional TLS for control-plane host:
 sudo bash scripts/configure-nginx-tunnel.sh --domain faiezwaseem.site --certbot
 ```
 
+The script uses `certbot certonly --nginx` and manages TLS in the tunnel config itself (it does not let Certbot install into `default.conf`).
+
 Script path:
 - [scripts/configure-nginx-tunnel.sh](scripts/configure-nginx-tunnel.sh)
-

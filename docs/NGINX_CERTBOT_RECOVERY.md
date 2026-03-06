@@ -95,8 +95,25 @@ With certbot:
 sudo bash scripts/configure-nginx-tunnel.sh --domain faiezwaseem.site --certbot
 ```
 
+Important: this script uses `certbot certonly --nginx` and then writes TLS only in its own tunnel config file, so it does not ask Certbot to install into `default.conf`.
+
 Help:
 
 ```bash
 sudo bash scripts/configure-nginx-tunnel.sh --help
+```
+
+## 7. If You See \"conflicting server name ... tunnel.<domain>\"
+
+Find old configs still claiming that hostname:
+
+```bash
+sudo grep -Rsn \"server_name.*tunnel\\.faiezwaseem\\.site\" /etc/nginx/sites-enabled
+```
+
+Disable/remove the old duplicate site, then test and reload:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
 ```
