@@ -1,0 +1,157 @@
+I want to develop my own version, can you use bunjs to create client binaries. And please provide complete code for this.
+
+
+Using **Bun** for this is an excellent choice. Bun’s native SQLite support, high-performance WebSockets, and the ability to compile into single-file binaries make it the ideal tool for building a custom tunneling service.
+
+The architecture below uses a **Request/Response ID system** over WebSockets to ensure that when a public user hits your VPS, the VPS knows exactly which local response belongs to that specific browser request.
+
+---
+
+### 1. The Server (`server.ts`)
+
+Run this on your VPS. It handles both the public HTTP traffic and the WebSocket control channel from your local PC.
+
+```typescript
+// server.ts
+const domain = "yourdomain.com"; // Change to your domain
+const tunnels = new Map<string, any>(); // Map subdomains to WS connections
+const pendingRequests = new Map<string, (res: Response) => void>();
+
+const server = Bun.serve({
+  port: 80,
+  async fetch(req, server) {
+    const url = new URL(req.url);
+    const host = req.headers.get("host") || "";
+    const subdomain = host.split(".")[0];
+
+    // 1. Handle WebSocket Upgrades (from your Local Client)
+    if (url.pathname === "/_tunnel_connect") {
+      const clientSubdomain = url.searchParams.get("subdomain");
+      if (server.upgrade(req, { data: { subdomain: clientSubdomain } })) return;
+    }
+
+    // 2. Handle Public Traffic
+    const tunnel = tunnels.get(subdomain);
+    if (!tunnel) return new Response("Tunnel not found", { status: 404 });
+
+    const requestId = crypto.randomUUID();
+    
+    // Create a promise that waits for the local client to respond
+    const responsePromise = new Promise<Response>((resolve) => {
+      pendingRequests.set(requestId, resolve);
+    });
+
+    // Send the request details to the local client
+    tunnel.send(JSON.stringify({
+      type: "REQ",
+      id: requestId,
+      method: req.method,
+      path: url.pathname + url.search,
+      headers: Object.fromEntries(req.headers.entries())
+    }));
+
+    return responsePromise;
+  },
+  websocket: {
+    open(ws) {
+      const { subdomain } = ws.data;
+      tunnels.set(subdomain, ws);
+      console.log(`Tunnel active: ${subdomain}.${domain}`);
+    },
+    message(ws, message) {
+      const data = JSON.parse(message.toString());
+      if (data.type === "RES") {
+        const resolve = pendingRequests.get(data.id);
+        if (resolve) {
+          resolve(new Response(data.body, { 
+            status: data.status, 
+            headers: data.headers 
+          }));
+          pendingRequests.delete(data.id);
+        }
+      }
+    },
+    close(ws) {
+      tunnels.delete(ws.data.subdomain);
+    }
+  }
+});
+
+console.log(`Tunneling server running on port 80`);
+
+```
+
+---
+
+### 2. The Client (`client.ts`)
+
+This runs on your Local PC. It connects to the VPS and proxies traffic to your local app (e.g., React, Node, or Python app).
+
+```typescript
+// client.ts
+const VPS_URL = "ws://your-vps-ip/_tunnel_connect"; // Use wss:// if using SSL
+const LOCAL_APP = "http://localhost:3000";
+const SUBDOMAIN = "myapp"; // The subdomain you want
+
+const ws = new WebSocket(`${VPS_URL}?subdomain=${SUBDOMAIN}`);
+
+ws.onopen = () => console.log(`Connected! Your app is public at ${SUBDOMAIN}.yourdomain.com`);
+
+ws.onmessage = async (event) => {
+  const reqData = JSON.parse(event.data.toString());
+
+  if (reqData.type === "REQ") {
+    console.log(`Proxying: ${reqData.method} ${reqData.path}`);
+    
+    try {
+      const localRes = await fetch(`${LOCAL_APP}${reqData.path}`, {
+        method: reqData.method,
+        headers: reqData.headers,
+      });
+
+      const body = await localRes.text();
+
+      ws.send(JSON.stringify({
+        type: "RES",
+        id: reqData.id,
+        status: localRes.status,
+        headers: Object.fromEntries(localRes.headers.entries()),
+        body: body
+      }));
+    } catch (err) {
+      console.error("Local app unreachable:", err.message);
+    }
+  }
+};
+
+```
+
+---
+
+### 3. Creating the Binary
+
+Bun can compile your client script into a standalone executable. This means you can give the `.exe` (or Linux binary) to anyone, and they can run it without even having Bun or Node installed.
+
+Run this command on your development machine:
+
+```bash
+# For Windows
+bun build ./client.ts --compile --target=bun-windows-x64 --outfile tunnel-client.exe
+
+# For Linux
+bun build ./client.ts --compile --target=bun-linux-x64 --outfile tunnel-client
+
+# For macOS
+bun build ./client.ts --compile --target=bun-darwin-arm64 --outfile tunnel-client-mac
+
+```
+
+---
+
+### Important Considerations
+
+* **Security:** This code is a "proof of concept." In a real-world scenario, you should add an **Auth Token** to the WebSocket connection so random people can't hijack your subdomains.
+* **Binary Data:** The code above uses `.text()` for simplicity. If you are tunneling images or files, you should use `ArrayBuffer` and `Uint8Array` to handle binary data.
+* **SSL:** To get `https://myapp.yourdomain.com`, I highly recommend putting **Nginx** or **Caddy** in front of your Bun server on the VPS to handle Let's Encrypt certificates.
+
+**Would you like me to show you how to add a simple Authentication Key to the client/server so only you can open tunnels?**
