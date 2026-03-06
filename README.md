@@ -31,7 +31,7 @@ This project supports:
 ### Server env vars
 
 - `PORT` (default: `8080`)
-- `DOMAIN` (default: `example.com`)
+- `DOMAIN` (default: `example.com`, should be the public tunnel base domain)
 - `DB_PATH` (default: `./data/tunnel.db`)
 - `REQUEST_TIMEOUT_MS` (default: `30000`)
 - `INITIAL_ADMIN_USERNAME` + `INITIAL_ADMIN_PASSWORD` (optional bootstrap admin at startup)
@@ -41,6 +41,7 @@ This project supports:
 - Defaults are loaded from `.env`:
 - `TUNNEL_SERVER_URL` (default: `ws://127.0.0.1:8080/_tunnel_connect`)
 - `TUNNEL_API_URL` (default: derived from `TUNNEL_SERVER_URL`, e.g. `http://127.0.0.1:8080`)
+- `TUNNEL_PUBLIC_DOMAIN` (optional; defaults to stripping the first label from `TUNNEL_SERVER_URL`)
 - `TUNNEL_SUBDOMAIN` (optional; if omitted, client auto-generates one)
 - `TUNNEL_LOCAL_URL` (default: `http://127.0.0.1:3000`)
 - `TUNNEL_AUTH_TOKEN` (required for tunnel mode)
@@ -48,7 +49,7 @@ This project supports:
 - `TUNNEL_USERNAME` and `TUNNEL_PASSWORD` (for register/login modes)
 - `TUNNEL_REVOKE_TOKEN` (optional fallback for revoke mode)
 - `--port`, `--p`, or `-p` can be used instead of `--local` (example: `--port 3000` -> `http://127.0.0.1:3000`)
-- CLI flags still override env values when provided (`--server`, `--api`, `--subdomain`, `--local`, `--port`, `--p`, `-p`, `--token`, `--username`, `--password`, `--revoke-token`).
+- CLI flags still override env values when provided (`--server`, `--api`, `--public-domain`, `--subdomain`, `--local`, `--port`, `--p`, `-p`, `--token`, `--username`, `--password`, `--revoke-token`).
 
 Token persistence:
 - After `--register` or `--login`, client auto-saves token locally and reuses it by default.
@@ -140,6 +141,14 @@ Override server/API when needed:
 bun run dev:client -- --token YOUR_ISSUED_TOKEN --server wss://tunnel.yourdomain.com/_tunnel_connect --api https://tunnel.yourdomain.com
 ```
 
+Recommended production layout:
+- Control plane: `tunnel.yourdomain.com`
+- Public tunnels: `<subdomain>.yourdomain.com`
+
+For that layout:
+- Server `DOMAIN` should be `yourdomain.com`
+- Client `--server` should be `wss://tunnel.yourdomain.com/_tunnel_connect`
+
 Now requests sent to host `<subdomain>.example.com` (or with local host header override) are forwarded to your local app.
 
 ## Build Client Binaries
@@ -217,6 +226,7 @@ See deployment docs:
 - [docs/NGINX_DOMAIN.md](docs/NGINX_DOMAIN.md)
 - [docs/NGINX_SUBDOMAIN.md](docs/NGINX_SUBDOMAIN.md)
 - [docs/NGINX_CERTBOT_RECOVERY.md](docs/NGINX_CERTBOT_RECOVERY.md)
+- [docs/WILDCARD_TLS.md](docs/WILDCARD_TLS.md)
 - [docs/APACHE_DOMAIN.md](docs/APACHE_DOMAIN.md)
 - [docs/APACHE_SUBDOMAIN.md](docs/APACHE_SUBDOMAIN.md)
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) (index)

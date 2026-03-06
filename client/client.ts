@@ -82,6 +82,7 @@ Connection options:
   --server <WS_URL>          Tunnel server WebSocket URL
   --api <HTTP_URL>           API base URL for register/login/token ops
   --token <TOKEN>            API token (required for tunnel/list/revoke modes)
+  --public-domain <DOMAIN>   Public tunnel base domain (e.g. faiezwaseem.site)
 
 Tunnel target options:
   --local <URL>              Local upstream URL (e.g. http://127.0.0.1:3000)
@@ -101,6 +102,7 @@ Environment fallbacks:
   TUNNEL_API_URL
   TUNNEL_AUTH_TOKEN
   TUNNEL_SESSION_FILE
+  TUNNEL_PUBLIC_DOMAIN
   TUNNEL_LOCAL_URL
   TUNNEL_SUBDOMAIN
   TUNNEL_USERNAME
@@ -139,15 +141,23 @@ function deriveApiBaseFromServerUrl(urlValue: string): string {
   return url.toString().replace(/\/$/, "");
 }
 
-function derivePublicHost(serverUrlValue: string, subdomainValue: string): string | undefined {
+function derivePublicDomain(serverUrlValue: string): string | undefined {
   try {
     const url = new URL(serverUrlValue);
-    const host = url.hostname.trim().toLowerCase();
-    if (!host) return undefined;
-    return `${subdomainValue}.${host}`;
+    const parts = url.hostname.trim().toLowerCase().split(".").filter(Boolean);
+    if (parts.length >= 3) return parts.slice(1).join(".");
+    if (parts.length >= 2) return parts.join(".");
+    return undefined;
   } catch {
     return undefined;
   }
+}
+
+function derivePublicHost(serverUrlValue: string, subdomainValue: string): string | undefined {
+  const configuredDomain = normalizeOptional(getArg("public-domain") ?? Bun.env.TUNNEL_PUBLIC_DOMAIN);
+  const baseDomain = configuredDomain ?? derivePublicDomain(serverUrlValue);
+  if (!baseDomain) return undefined;
+  return `${subdomainValue}.${baseDomain}`;
 }
 
 const isRegisterMode = hasFlag("register");
