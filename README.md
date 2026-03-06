@@ -164,6 +164,41 @@ Binaries are written into `dist/`.
 - Consider adding rate limiting and per-user tunnel ownership.
 - Add persistent tunnel/session state if you need HA across multiple server instances.
 
+## Run With PM2
+
+PM2 config file:
+- [ecosystem.config.cjs](C:\Users\Faiez\development\test\tunnel-server\ecosystem.config.cjs)
+
+Install PM2 on the VPS if needed:
+
+```bash
+npm install -g pm2
+```
+
+Stop any foreground Bun server first, then start with PM2:
+
+```bash
+cd ~/test/tunnel-server
+pm2 start ecosystem.config.cjs
+pm2 status
+pm2 logs tunnel-server
+```
+
+Persist across reboot:
+
+```bash
+pm2 save
+pm2 startup
+```
+
+Common commands:
+
+```bash
+pm2 restart tunnel-server
+pm2 stop tunnel-server
+pm2 delete tunnel-server
+```
+
 ## Quick Test Flow
 
 1. Run a local app on `http://127.0.0.1:3000`.
