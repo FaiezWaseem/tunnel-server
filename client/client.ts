@@ -139,6 +139,17 @@ function deriveApiBaseFromServerUrl(urlValue: string): string {
   return url.toString().replace(/\/$/, "");
 }
 
+function derivePublicHost(serverUrlValue: string, subdomainValue: string): string | undefined {
+  try {
+    const url = new URL(serverUrlValue);
+    const host = url.hostname.trim().toLowerCase();
+    if (!host) return undefined;
+    return `${subdomainValue}.${host}`;
+  } catch {
+    return undefined;
+  }
+}
+
 const isRegisterMode = hasFlag("register");
 const isLoginMode = hasFlag("login");
 const isListTokensMode = hasFlag("list-tokens");
@@ -396,9 +407,13 @@ async function connectLoop(): Promise<void> {
           ensureValidSubdomainOrExit(subdomain);
           const auth: AuthMessage = { type: "AUTH", subdomain, token };
           ws!.send(JSON.stringify(auth));
+          const publicHost = derivePublicHost(serverUrl, subdomain);
 
           console.log(`Connected to ${serverUrl}`);
           console.log(`Tunnel requested: ${subdomain}`);
+          if (publicHost) {
+            console.log(`Public URL: https://${publicHost}`);
+          }
 
           heartbeat = setInterval(() => {
             ws?.send(JSON.stringify({ type: "PING", ts: Date.now() }));
