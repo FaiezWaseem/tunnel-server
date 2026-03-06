@@ -11,7 +11,7 @@ This is different from the control-plane host:
 
 ## Why This Is Needed
 
-If your server uses:
+Your server currently uses:
 
 - `DOMAIN=tunnel.faiezwaseem.site`
 
@@ -19,18 +19,10 @@ So when a client requests subdomain `test`, the final public host becomes:
 
 - `test.tunnel.faiezwaseem.site`
 
-then Nginx needs:
+To serve that over HTTPS, Nginx needs:
 
 1. A wildcard certificate for `*.tunnel.faiezwaseem.site`
 2. A wildcard HTTPS server block
-
-If you switch to the cleaner layout:
-
-- control plane: `tunnel.faiezwaseem.site`
-- public tunnels: `test.faiezwaseem.site`
-- server env: `DOMAIN=faiezwaseem.site`
-
-then your existing wildcard certificate for `*.faiezwaseem.site` can be reused and this guide is no longer needed for public tunnel HTTPS.
 
 ## 1. Request Wildcard Certificate
 

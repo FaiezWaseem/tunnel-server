@@ -7,7 +7,7 @@ module.exports = {
       cwd: __dirname,
       env: {
         PORT: "8080",
-        DOMAIN: "faiezwaseem.site",
+        DOMAIN: "tunnel.faiezwaseem.site",
         DB_PATH: "./data/tunnel.db",
         REQUEST_TIMEOUT_MS: "30000",
         INITIAL_ADMIN_USERNAME: "",
