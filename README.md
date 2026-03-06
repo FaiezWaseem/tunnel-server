@@ -75,7 +75,13 @@ Copy-Item .env.example .env
 bun run dev:server
 ```
 
-### 2. Client usage guide\n\nSee all options:\n\n```bash\nbun run dev:client -- --help\n```
+### 2. Client usage guide
+
+See all options:
+
+```bash
+bun run dev:client -- --help
+```
 
 Register user and get first token:
 
@@ -174,9 +180,25 @@ You should receive your local app response through the tunnel.
 See deployment docs:
 - [docs/NGINX_DOMAIN.md](docs/NGINX_DOMAIN.md)
 - [docs/NGINX_SUBDOMAIN.md](docs/NGINX_SUBDOMAIN.md)
+- [docs/NGINX_CERTBOT_RECOVERY.md](docs/NGINX_CERTBOT_RECOVERY.md)
 - [docs/APACHE_DOMAIN.md](docs/APACHE_DOMAIN.md)
 - [docs/APACHE_SUBDOMAIN.md](docs/APACHE_SUBDOMAIN.md)
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) (index)
 
+## Nginx Auto-Configure Script
 
+Use the automation script to create isolated Nginx tunnel vhosts safely:
+
+```bash
+sudo bash scripts/configure-nginx-tunnel.sh --domain faiezwaseem.site
+```
+
+Optional TLS for control-plane host:
+
+```bash
+sudo bash scripts/configure-nginx-tunnel.sh --domain faiezwaseem.site --certbot
+```
+
+Script path:
+- [scripts/configure-nginx-tunnel.sh](scripts/configure-nginx-tunnel.sh)
 
