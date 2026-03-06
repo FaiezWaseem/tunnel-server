@@ -103,6 +103,26 @@ Help:
 sudo bash scripts/configure-nginx-tunnel.sh --help
 ```
 
+## 9. Unified \"Run-and-Go\" Script
+
+If you want one command that handles install + fix + configure + optional TLS:
+
+```bash
+sudo bash scripts/bootstrap-tunnel-nginx.sh --domain faiezwaseem.site
+```
+
+No TLS (HTTP only):
+
+```bash
+sudo bash scripts/bootstrap-tunnel-nginx.sh --domain faiezwaseem.site --no-tls
+```
+
+Custom upstream:
+
+```bash
+sudo bash scripts/bootstrap-tunnel-nginx.sh --domain faiezwaseem.site --upstream 127.0.0.1:8080
+```
+
 ## 7. If You See \"conflicting server name ... tunnel.<domain>\"
 
 Find old configs still claiming that hostname:
@@ -112,6 +132,42 @@ sudo grep -Rsn \"server_name.*tunnel\\.faiezwaseem\\.site\" /etc/nginx/sites-ena
 ```
 
 Disable/remove the old duplicate site, then test and reload:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+## 8. Exact Fix for `default.conf` Conflict (tunnel host duplicated)
+
+If `default.conf` contains a `server_name tunnel.<domain>` block, remove it.
+`default.conf` should remain only a catch-all default server.
+
+Example safe replacement:
+
+```bash
+sudo tee /etc/nginx/sites-enabled/default.conf > /dev/null <<'EOF'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    ssl_reject_handshake on;
+    server_name _;
+    return 444;
+}
+EOF
+```
+
+Then make sure tunnel host exists in only one file:
+
+```bash
+sudo grep -Rsn "server_name.*tunnel\.faiezwaseem\.site" /etc/nginx/sites-enabled
+```
+
+You should get exactly one result (your dedicated tunnel config file).
+
+Validate and reload:
 
 ```bash
 sudo nginx -t

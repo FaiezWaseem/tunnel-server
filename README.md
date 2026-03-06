@@ -203,3 +203,14 @@ The script uses `certbot certonly --nginx` and manages TLS in the tunnel config 
 
 Script path:
 - [scripts/configure-nginx-tunnel.sh](scripts/configure-nginx-tunnel.sh)
+
+## Nginx Unified Bootstrap Script
+
+For a single \"run-and-go\" command (install + fix + configure + TLS):
+
+```bash
+sudo bash scripts/bootstrap-tunnel-nginx.sh --domain faiezwaseem.site
+```
+
+Script path:
+- [scripts/bootstrap-tunnel-nginx.sh](scripts/bootstrap-tunnel-nginx.sh)
